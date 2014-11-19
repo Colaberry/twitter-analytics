@@ -1,26 +1,31 @@
 package com.colaberry.twitterfeed.mongodb.dao;
 
 import java.net.UnknownHostException;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import twitter4j.Status;
 
+import com.colaberry.twitterfeed.mongodb.domain.TwitterData;
+import com.colaberry.twitterfeed.util.MongoUtil;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
-import com.mongodb.MongoClient;
 
 public class TwitterFeedDao {
 	/**Method to Get the Connection from the database*/
 	public static DBCollection getConnection(String dbName, String collectionName)throws UnknownHostException {
 
 		/** Connecting to MongoDB */
-		MongoClient mongo = new MongoClient("localhost", 27017);
-
+		//MongoClient mongo = new MongoClient("localhost", 27017);
+		MongoUtil resource =MongoUtil.INSTANCE;
 		/**Gets database, incase if the database is not existing
 	             MongoDB Creates it for you*/
-		DB db = mongo.getDB(dbName);
+		DB db=resource.getDBName(dbName);
+		//DB db = mongo.getDB(dbName);
 
 		/**Gets collection / table from database specified if
 	             collection doesn't exists, MongoDB will create it for
@@ -38,15 +43,23 @@ public class TwitterFeedDao {
 		table.insert(document);
 	}
 	/**Method to find data*/
-	public static void findData(String dbName, String collectionName)throws UnknownHostException{
+	public static List<Map> findData(String dbName, String collectionName)throws UnknownHostException{
 		DBCollection table =TwitterFeedDao.getConnection(dbName, collectionName);
+		Map<String,Object> jsonDocument = new HashMap<String,Object>();
+		List<Map> jsonObjects=new ArrayList<Map>();
 		BasicDBObject searchQuery = new BasicDBObject();
 		//searchQuery.put("userName", "java");
 		//DBCursor cursor = table.find(searchQuery);
 		DBCursor cursor = table.find();
+		TwitterData twitterData=new TwitterData();
 		while (cursor.hasNext()) {
-			System.out.println(cursor.next());
-		}
+			cursor.next();
+			twitterData.setTheText(cursor.curr().get("text").toString());
+			twitterData.setTheUserName(cursor.curr().get("userName").toString());
+			jsonDocument.put(cursor.curr().get("_id").toString(),twitterData);
+			jsonObjects.add(jsonDocument);
+
+		}return jsonObjects;
 	}
 	/**Method to remove data*/
 	public static void removeData(String dbName, String collectionName)throws UnknownHostException{
